@@ -1,5 +1,6 @@
 (ns do-alert.core)
 
+(import '(java.util Calendar))
 (import '(javax.swing JOptionPane))
 (import '(java.awt Image MenuItem PopupMenu SystemTray Toolkit TrayIcon))
 (import '(java.awt.event ActionEvent ActionListener))
@@ -13,11 +14,11 @@
 
 (defn str-to-time [time-str]
   (let [hour-min (clojure.string/split time-str #":")
-        date (java.util.Date.)]
-    (doto date
-      (.setHours (parse-int (first hour-min)))
-      (.setMinutes (parse-int (second hour-min))))
-    (.getTime date)))
+        calendar (Calendar/getInstance)]
+    (doto calendar
+      (.set Calendar/HOUR_OF_DAY (parse-int (first hour-min)))
+      (.set Calendar/MINUTE (parse-int (second hour-min))))
+    (.. calendar getTime getTime)))
 
 (defn count-interval [end-time]
   (-  end-time (now)))
@@ -50,7 +51,10 @@
   (let [item (MenuItem. label)
         timer (javax.swing.Timer.
                interval
-               (reify ActionListener (actionPerformed [this evt] (call-back))))]
+               (reify ActionListener
+                 (actionPerformed [this evt]
+                   (call-back)
+                   (.. evt getSource stop))))]
     (println (str "interval: " interval))
     (.start timer)
     item))
