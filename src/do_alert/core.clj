@@ -7,18 +7,24 @@
 
 ;; utils -----------------------------------------------------------------------
 (defn parse-int [s]
-  (Integer. (re-find  #"\d+" s)))
+  (try (Integer. (re-find  #"\d+" s))
+       (catch Exception e nil)))
 
 (defn now []
   (System/currentTimeMillis))
 
 (defn str-to-time [time-str]
   (let [hour-min (clojure.string/split time-str #":")
-        calendar (Calendar/getInstance)]
-    (doto calendar
-      (.set Calendar/HOUR_OF_DAY (parse-int (first hour-min)))
-      (.set Calendar/MINUTE (parse-int (second hour-min))))
-    (.. calendar getTime getTime)))
+        calendar (Calendar/getInstance)
+        hour (parse-int (first hour-min))
+        min (parse-int (second hour-min))]
+    (if (and (number? hour) (number? min))
+      (do
+        (doto calendar
+          (.set Calendar/HOUR_OF_DAY hour)
+          (.set Calendar/MINUTE min))
+        (.. calendar getTime getTime))
+      0)))
 
 (defn count-interval [end-time]
   (-  end-time (now)))
@@ -63,11 +69,11 @@
   (.add menu item))
 
 (defn read-tasks []
-  (doseq [line (read-from-file "/Users/reniclin/test.txt")]
+  (doseq [line (read-from-file (str (System/getProperty "user.home") (java.io.File/separator) "tasks.txt"))]
     (let [time-str (first (clojure.string/split line #"\s+"))
           task-str (second (clojure.string/split line #"\s+"))
           interval (count-interval (str-to-time time-str))]
-      (if (> interval 0)
+      (if (pos? interval)
         (add-item
          (create-time-item
           line
