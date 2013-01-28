@@ -6,6 +6,9 @@
 (import '(java.awt.event ActionEvent ActionListener))
 
 ;; utils -----------------------------------------------------------------------
+;; store all timers.
+(def timers-vector (java.util.Vector.))
+
 (defn parse-int [s]
   (try (Integer. (re-find  #"\d+" s))
        (catch Exception e nil)))
@@ -63,6 +66,7 @@
                    (.. evt getSource stop))))]
     (println (str "interval: " interval))
     (.start timer)
+    (.add timers-vector timer)
     item))
 
 (defn add-item [item]
@@ -81,8 +85,23 @@
           #(do (println "call-back called!")
                (JOptionPane/showMessageDialog nil, (str "It's time to " task-str)))))))))
 
+(defn remove-all-items []
+  (.removeAll menu))
+
+(defn stop-n-clear-timers []
+  (doseq [timer timers-vector] (.stop timer))
+  (.clear timers-vector))
+
 (defn add-close []
-  (add-item (create-item "close" #((System/exit 0)))))
+  (add-item (create-item "close" #(System/exit 0))))
+
+(defn add-refresh []
+  (add-item
+   (create-item "refresh" #(do (remove-all-items)
+                               (stop-n-clear-timers)
+                               (add-refresh)
+                               (read-tasks)
+                               (add-close)))))
 
 ;; main ------------------------------------------------------------------------
 (defn init-tray []
@@ -91,5 +110,6 @@
 
 (defn -main []
   (init-tray)
+  (add-refresh)
   (read-tasks)
   (add-close))
